@@ -9,7 +9,20 @@
 #if os(iOS) || os(tvOS) || os(watchOS)
 import UIKit
 
+public protocol SheetViewControllerDelegate: NSObjectProtocol {
+
+    func sheetViewController(_ sheetViewController: SheetViewController, stateDidChangedWith state: SheetViewController.ViewState)
+}
+
 public class SheetViewController: UIViewController {
+	
+    public enum ViewState {
+        case fixed(SheetSize)
+        case dynamic(SheetSize, CGFloat)
+    }
+
+    public weak var delegate: SheetViewControllerDelegate? = nil
+	
     public private(set) var options: SheetOptions
     
     /// Default value for autoAdjustToKeyboard. Defaults to true.
@@ -388,10 +401,9 @@ public class SheetViewController: UIViewController {
                 }, completion: { _ in
                     self.isPanning = false
                 })
-            
+            	self.delegate?.sheetViewController(self, stateDidChangedWith: .fixed(self.currentSize))
             case .began, .changed:
                 self.contentViewHeightConstraint.constant = newHeight
-                
                 if offset > 0 {
                     let percent = max(0, min(1, offset / max(1, newHeight)))
                     self.transition.setPresentor(percentComplete: percent)
@@ -400,6 +412,7 @@ public class SheetViewController: UIViewController {
                 } else {
                     self.contentViewController.view.transform = CGAffineTransform.identity
                 }
+		self.delegate?.sheetViewController(self, stateDidChangedWith: .dynamic(self.currentSize, maxHeight - newHeight))
             case .ended:
                 let velocity = (0.05 * gesture.velocity(in: self.view).y)
                 var finalHeight = newHeight - offset - velocity
@@ -426,6 +439,7 @@ public class SheetViewController: UIViewController {
                     }, completion: { complete in
                         self.attemptDismiss(animated: false)
                     })
+		    self.delegate?.sheetViewController(self, stateDidChangedWith: .fixed(self.currentSize))
                     return
                 }
                 
@@ -454,6 +468,8 @@ public class SheetViewController: UIViewController {
                 let previousSize = self.currentSize
                 self.currentSize = newSize
                 
+		self.delegate?.sheetViewController(self, stateDidChangedWith: .fixed(self.currentSize))
+		
                 let newContentHeight = self.height(for: newSize)
                 UIView.animate(
                     withDuration: animationDuration,
