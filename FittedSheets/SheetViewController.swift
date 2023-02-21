@@ -723,7 +723,10 @@ extension SheetViewController: UIGestureRecognizerDelegate {
         }
         let topInset = childScrollView.contentInset.top
         
-        guard (childScrollView.contentOffset.y <= -topInset || height(for: self.currentSize) < height(for: SheetSize.fullscreen)) else { return false }
+        if height(for: self.currentSize) < height(for: SheetSize.fullscreen) {
+            childScrollView.contentOffset = .zero
+        }
+        guard childScrollView.contentOffset.y <= -topInset else { return false }
         
         if velocity.y < 0 {
             let containerHeight = height(for: self.currentSize)
